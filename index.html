@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Track Fire Video</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        h1 {
+            color: #333;
+        }
+        form {
+            background: #fff;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        input[type="file"] {
+            display: none;
+        }
+        .file-upload {
+            border: 2px dashed #ccc;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            margin-bottom: 10px;
+        }
+        .loader {
+            display: none;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 10px auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        video {
+            margin-top: 20px;
+            max-width: 100%;
+        }
+    </style>
+    <script>
+        // Function to handle the form submission via AJAX
+        function submitForm(event) {
+            event.preventDefault();
+
+            const loader = document.getElementById("loader");
+            loader.style.display = "block"; // Show loader
+
+            let formData = new FormData(document.getElementById("trackForm"));
+            fetch('/track', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.blob(); // Expecting a video file
+            })
+            .then(blob => {
+                loader.style.display = "none"; // Hide loader
+                const url = URL.createObjectURL(blob);
+                const videoPlayer = document.getElementById("videoPlayer");
+                videoPlayer.src = url;
+                videoPlayer.style.display = "block"; // Show video player
+                document.getElementById("result").innerHTML = "Video processed successfully!";
+            })
+            .catch(error => {
+                loader.style.display = "none"; // Hide loader
+                document.getElementById("result").innerHTML = `Error: ${error.message}`;
+            });
+        }
+
+        // Function to handle drag and drop
+        function handleDrop(event) {
+            event.preventDefault();
+            const files = event.dataTransfer.files;
+            if (files.length > 0) {
+                document.getElementById("video_file").files = files;
+                document.getElementById("fileLabel").innerText = files[0].name;
+            }
+        }
+
+        function handleDragOver(event) {
+            event.preventDefault();
+        }
+    </script>
+</head>
+<body>
+    <h1>Track Fire in Video</h1>
+    <form id="trackForm" onsubmit="submitForm(event)" enctype="multipart/form-data">
+        <div class="file-upload" ondrop="handleDrop(event)" ondragover="handleDragOver(event)">
+            <label for="video_file" id="fileLabel">Drag and drop your video file here or click to upload</label>
+            <input type="file" id="video_file" name="video_file" required>
+        </div>
+
+        <label for="conf">Confidence:</label>
+        <input type="number" id="conf" name="conf" step="0.01" min="0" value="0.01" required><br><br>
+
+        <label for="iou">IoU Threshold:</label>
+        <input type="number" id="iou" name="iou" step="0.01" min="0" value="0.3" required><br><br>
+
+        <button type="submit">Submit</button>
+    </form>
+
+    <div class="loader" id="loader"></div>
+    <div id="result"></div>
+    <video id="videoPlayer" controls style="display:none;"></video>
+</body>
